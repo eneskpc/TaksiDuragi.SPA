@@ -1,0 +1,23 @@
+@import url("https://fonts.googleapis.com/css2?family=Comfortaa:wght@300;400;700&display=swap");
+
+$theme-colors: (
+  "primary": #444444,
+  "secondary": #ffc60b,
+  "warning": #ff8b00,
+  "light": #feffdb,
+);
+
+@import "../node_modules/bootstrap/scss/bootstrap.scss";
+
+body {
+  font-family: "Comfortaa", cursive;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+}
+
+.cursor-pointer {
+  cursor: pointer;
+}
