@@ -23,24 +23,28 @@ class CallerList extends Component {
       },
       () => {
         try {
-          this.state.connection.start().then(() => {
-            this.state.connection
-              .invoke("RegisterUserByReceiver", "000000123")
-              .catch((err) => console.error(err));
-          });
+          this.state.connection
+            .start()
+            .then(() => {
+              this.state.connection
+                .invoke("RegisterUserByReceiver", "000000123")
+                .catch((err) => console.error(err));
+            })
+            .catch((err) => {
+              window.location.reload();
+            });
 
           this.state.connection.on("ReceiveCallerInfo", (callerInfo) => {
             this.setState(
               {
                 audio: new Audio(notifiationSound),
                 callerList: [
-                  ...this.state.callerList,
                   { id: moment().format("x"), ...callerInfo },
+                  ...this.state.callerList,
                 ],
               },
               () => {
                 if (this.state.audio) this.state.audio.play();
-                window.scrollTo(0, document.body.clientHeight);
               }
             );
           });
@@ -85,22 +89,66 @@ class CallerList extends Component {
             </thead>
             <tbody>
               {this.state.callerList.length > 0 ? (
-                this.state.callerList.map((caller) => (
+                this.state.callerList.map((caller, index) => (
                   <ContextMenuTrigger
                     renderTag="tr"
-                    id="same_unique_identifier"
+                    id={`same_unique_identifier_${caller.id}`}
                     key={caller.id}
-                    onOpen={()=>{
-                      alert("selam");
-                    }}
                     holdToDisplay={-1}
+                    attributes={{
+                      className: `animate__animated animate__backInLeft ${
+                        index == 0 ? "bg-secondary" : ""
+                      }`,
+                    }}
                   >
                     <td>{caller.lineNumber}</td>
                     <td>{moment(caller.callDateTime).format("LLL")}</td>
                     <td>{caller.callerNumber}</td>
-                    <td></td>
-                    <td></td>
-                    <td>{caller.deviceSerialNumber}</td>
+                    <td>
+                      {caller.callerNameSurname || (
+                        <div className="text-center">
+                          <i className="fas fa-minus fa-fw"></i>
+                        </div>
+                      )}
+                    </td>
+                    <td>
+                      {caller.callerAddress || (
+                        <div className="text-center">
+                          <i className="fas fa-minus fa-fw"></i>
+                        </div>
+                      )}
+                    </td>
+                    <td>
+                      {caller.deviceSerialNumber}{" "}
+                      <ContextMenu
+                        className="list-group shadow-lg"
+                        id={`same_unique_identifier_${caller.id}`}
+                      >
+                        {caller.callerNameSurname ? (
+                          <MenuItem
+                            className="list-group-item list-group-item-action cursor-pointer"
+                            data={{ foo: "bar" }}
+                            onClick={() => {
+                              alert("hop kaydettim");
+                            }}
+                          >
+                            <i className="fas fa-edit fa-fw mr-3"></i>
+                            <span>Müşteriyi Düzenle</span>
+                          </MenuItem>
+                        ) : (
+                          <MenuItem
+                            className="list-group-item list-group-item-action cursor-pointer"
+                            data={{ foo: "bar" }}
+                            onClick={() => {
+                              alert("hop kaydettim");
+                            }}
+                          >
+                            <i className="fas fa-plus-square fa-fw mr-3"></i>
+                            <span>Adres Defterine Kaydet</span>
+                          </MenuItem>
+                        )}
+                      </ContextMenu>
+                    </td>
                   </ContextMenuTrigger>
                 ))
               ) : (
@@ -112,22 +160,6 @@ class CallerList extends Component {
               )}
             </tbody>
           </table>
-
-          <ContextMenu
-            className="list-group shadow-lg"
-            id="same_unique_identifier"
-          >
-            <MenuItem
-              className="list-group-item list-group-item-action cursor-pointer"
-              data={{ foo: "bar" }}
-              onClick={() => {
-                alert("hop kaydettim");
-              }}
-            >
-              <i className="fas fa-plus-square fa-fw mr-3"></i>
-              <span>Adres Defterine Kaydet</span>
-            </MenuItem>
-          </ContextMenu>
         </div>
       </div>
     );
