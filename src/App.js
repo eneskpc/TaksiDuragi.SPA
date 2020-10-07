@@ -27,7 +27,7 @@ class App extends Component {
       <Router>
         <Switch>
           <AppRoute
-            path="/portal"
+            path="/portal/kontrol-paneli"
             layout={PrivateLayout}
             exact
             component={Dashboard}

@@ -4,20 +4,48 @@ import "moment/locale/tr";
 import notifiationSound from "../Assets/notification.mp3";
 import * as signalR from "@microsoft/signalr/dist/browser/signalr";
 import { ContextMenu, MenuItem, ContextMenuTrigger } from "react-contextmenu";
+import Axios from "axios";
+import { GetAPIUrl } from "../Helper";
 
 class CallerList extends Component {
   state = {
     connection: null,
     callerList: [],
     audio: null,
+    showLoadMore: true,
+    pageNumber: 1,
+  };
+
+  loadMore = () => {
+    Axios.post(`${GetAPIUrl()}/auth`, {
+      userName: "enes.kapucu@sdf.com",
+      password: "Gncfb!1907",
+    }).then((resp) => {
+      Axios.get(`${GetAPIUrl()}/callers?p=${this.state.pageNumber}`, {
+        headers: {
+          Authorization: `Bearer ${resp.data}`,
+        },
+      }).then((response) => {
+        this.setState({
+          callerList: [...this.state.callerList, ...response.data],
+          showLoadMore: response.data.length >= 20,
+        });
+      });
+      this.setState({
+        pageNumber: this.state.pageNumber + 1,
+      });
+    });
   };
 
   componentDidMount() {
     moment.locale("tr");
+
+    this.loadMore();
+
     this.setState(
       {
         connection: new signalR.HubConnectionBuilder()
-          .withUrl("https://localhost:44346/Caller-Hub")
+          .withUrl(`${GetAPIUrl()}/Caller-Hub`)
           .configureLogging(signalR.LogLevel.Information)
           .build(),
       },
@@ -35,13 +63,11 @@ class CallerList extends Component {
             });
 
           this.state.connection.on("ReceiveCallerInfo", (callerInfo) => {
+            console.log(callerInfo);
             this.setState(
               {
                 audio: new Audio(notifiationSound),
-                callerList: [
-                  { id: moment().format("x"), ...callerInfo },
-                  ...this.state.callerList,
-                ],
+                callerList: [{ ...callerInfo }, ...this.state.callerList],
               },
               () => {
                 if (this.state.audio) this.state.audio.play();
@@ -96,9 +122,15 @@ class CallerList extends Component {
                     key={caller.id}
                     holdToDisplay={-1}
                     attributes={{
-                      className: `animate__animated animate__backInLeft ${
-                        index == 0 ? "bg-secondary" : ""
-                      }`,
+                      className: `${
+                        index === 0
+                          ? "animate__animated animate__backInLeft"
+                          : ""
+                      } ${index === 0 ? "bg-light" : ""}`,
+                      onAnimationEnd: (e) => {
+                        e.target.classList.remove("animate__animated");
+                        e.target.classList.remove("animate__backInLeft");
+                      },
                     }}
                   >
                     <td>{caller.lineNumber}</td>
@@ -118,37 +150,7 @@ class CallerList extends Component {
                         </div>
                       )}
                     </td>
-                    <td>
-                      {caller.deviceSerialNumber}{" "}
-                      <ContextMenu
-                        className="list-group shadow-lg"
-                        id={`same_unique_identifier_${caller.id}`}
-                      >
-                        {caller.callerNameSurname ? (
-                          <MenuItem
-                            className="list-group-item list-group-item-action cursor-pointer"
-                            data={{ foo: "bar" }}
-                            onClick={() => {
-                              alert("hop kaydettim");
-                            }}
-                          >
-                            <i className="fas fa-edit fa-fw mr-3"></i>
-                            <span>Müşteriyi Düzenle</span>
-                          </MenuItem>
-                        ) : (
-                          <MenuItem
-                            className="list-group-item list-group-item-action cursor-pointer"
-                            data={{ foo: "bar" }}
-                            onClick={() => {
-                              alert("hop kaydettim");
-                            }}
-                          >
-                            <i className="fas fa-plus-square fa-fw mr-3"></i>
-                            <span>Adres Defterine Kaydet</span>
-                          </MenuItem>
-                        )}
-                      </ContextMenu>
-                    </td>
+                    <td>{caller.deviceSerialNumber}</td>
                   </ContextMenuTrigger>
                 ))
               ) : (
@@ -160,6 +162,57 @@ class CallerList extends Component {
               )}
             </tbody>
           </table>
+          {this.state.callerList.length > 0
+            ? this.state.callerList.map((caller) => {
+                return (
+                  <ContextMenu
+                    className="list-group shadow-lg"
+                    key={caller.id}
+                    id={`same_unique_identifier_${caller.id}`}
+                    style={{
+                      top: "0 !important",
+                    }}
+                  >
+                    {caller.callerNameSurname ? (
+                      <MenuItem
+                        className="list-group-item list-group-item-action cursor-pointer"
+                        data={{ foo: "bar" }}
+                        onClick={() => {
+                          alert("hop kaydettim");
+                        }}
+                      >
+                        <i className="fas fa-edit fa-fw mr-3"></i>
+                        <span>Müşteriyi Düzenle</span>
+                      </MenuItem>
+                    ) : (
+                      <MenuItem
+                        className="list-group-item list-group-item-action cursor-pointer"
+                        data={{ foo: "bar" }}
+                        onClick={() => {
+                          alert("hop kaydettim");
+                        }}
+                      >
+                        <i className="fas fa-plus-square fa-fw mr-3"></i>
+                        <span>Müşteriyi Kaydet</span>
+                      </MenuItem>
+                    )}
+                  </ContextMenu>
+                );
+              })
+            : null}
+          <div className="text-center mb-5">
+            {this.state.callerList.length > 0 && this.state.showLoadMore ? (
+              <button
+                type="button"
+                className="btn btn-primary btn-sm"
+                onClick={() => {
+                  this.loadMore();
+                }}
+              >
+                Daha Fazla Yükle
+              </button>
+            ) : null}
+          </div>
         </div>
       </div>
     );
